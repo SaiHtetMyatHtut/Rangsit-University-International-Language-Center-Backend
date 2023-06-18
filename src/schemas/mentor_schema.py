@@ -1,6 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel
-from ..schemas.auth_schema import AuthWithToken, AuthPayload
+from src.schemas.auth_schema import AuthWithToken, AuthPayload
 
 class MentorBase(BaseModel):
     pass
@@ -36,3 +36,6 @@ class Mentor(MentorBase):
     ig_url: Optional[str] = None
     fb_url: Optional[str] = None
     line_id: Optional[str] = None
+
+    class Config:
+        orm_mode = True 
