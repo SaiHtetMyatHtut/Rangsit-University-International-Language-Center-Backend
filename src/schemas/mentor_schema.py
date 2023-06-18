@@ -1,37 +1,38 @@
-# create pydantic schemas for student with have name, email, hashed_password, image_url, role and id fields.
 from typing import Optional
 from pydantic import BaseModel
 from ..schemas.auth_schema import AuthWithToken, AuthPayload
 
-class StudentBase(BaseModel):
+class MentorBase(BaseModel):
     pass
 
-class StudentAuth(StudentBase):
+class MentorAuth(MentorBase):
     email: str
     password: str
 
-class StudentAuthReturn(StudentBase):
+class MentorAuthReturn(MentorBase):
     name: str
     email: str
     jwt_token: AuthWithToken
 
-class StudentCreate(StudentBase):
+class MentorCreate(MentorBase):
     name: str
     email: str
     password: str
     image_url: Optional[str] = None
     role: Optional[str] = None
+    languages: Optional[str] = None
+    ig_url: Optional[str] = None
+    fb_url: Optional[str] = None
+    line_id: Optional[str] = None
 
 
-class Student(StudentBase):
+class Mentor(MentorBase):
     id: int
     name: str
     email: str
     image_url: Optional[str] = None
     role: Optional[str] = None
-
-
-
-
-
-
+    languages: Optional[str] = None
+    ig_url: Optional[str] = None
+    fb_url: Optional[str] = None
+    line_id: Optional[str] = None
