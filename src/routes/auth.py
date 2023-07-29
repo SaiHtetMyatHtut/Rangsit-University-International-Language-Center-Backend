@@ -13,12 +13,14 @@ load_dotenv()  # take environment variables from .env.
 
 
 # login authentication
-@router.post("/login", response_model=student_schema.StudentAuthReturn)
+@router.get("/login", response_model=student_schema.StudentAuthReturn)
 def login(
-    req_student: student_schema.StudentAuth,
+    email: str,
+    password: str,
     db: Session = Depends(get_db)
 ):
-    student = authenticate_user(req_student, db)
+    student = authenticate_user(student_schema.StudentAuth(
+        email=email, password=password), db)
     permissions = db.query(Permission).filter(
         Permission.role_id == student.role_id).all()
     if not student:
@@ -29,8 +31,7 @@ def login(
 
     permissions_dict = []
     for permission in permissions:
-        permissions_dict.append(permission.route +":"+permission.access.value)
-
+        permissions_dict.append(permission.route + ":"+permission.access.value)
 
     # access_token = create_access_token(
     #     data={
