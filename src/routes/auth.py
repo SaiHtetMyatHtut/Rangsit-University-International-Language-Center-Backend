@@ -1,11 +1,13 @@
+from typing import Annotated
 from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status, APIRouter
-from src.database.model import Student, Role, Permission
+from fastapi.security import OAuth2PasswordRequestForm
+from src.database.model import User, Role, Permission
 from src.database.setup import get_db
 from sqlalchemy.orm import Session
-from src.schemas import student_schema
-from src.services.auth_services import authenticate_user, get_student_by_email, create_access_token, pwd_context
-
+from src.services.auth_services import authenticate_user, check_user_by_email, create_access_token, pwd_context
+from src.schemas import auth_schemas, user_schemas
+from src.services import auth_services
 
 router = APIRouter()
 
@@ -13,70 +15,28 @@ load_dotenv()  # take environment variables from .env.
 
 
 # login authentication
-@router.get("/login", response_model=student_schema.StudentAuthReturn)
-def login(
-    email: str,
-    password: str,
-    db: Session = Depends(get_db)
+@router.post("/login")
+async def login(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends(auth_schemas.AuthEmailPassword)],
+    db: Session = Depends(get_db),
 ):
-    student = authenticate_user(student_schema.StudentAuth(
-        email=email, password=password), db)
-    permissions = db.query(Permission).filter(
-        Permission.role_id == student.role_id).all()
-    if not student:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
-        )
+    users = db.query(User).filter(User.email == form_data.email).first()
+    if not users:
+        return {"error": "Invalid Credentials"}
+    user = auth_services.authenticate_user(
+        db, form_data.email, form_data.password)
+    if not user:
+        return {"error": "Invalid Credentials"}
+    access_token = auth_services.create_access_token(
+        data={"sub": user.email}
+    )
+    # return {"access_token": access_token, "token_type": "bearer"}
 
-    permissions_dict = []
-    for permission in permissions:
-        permissions_dict.append(permission.route + ":"+permission.access.value)
-
-    # access_token = create_access_token(
-    #     data={
-    #         "sub": {
-    #             "id": student.id,
-    #             "name": student.name,
-    #             "email": student.email,
-    #             "permissions": permissions_dict
-    #         }
-    #     }
-    # )
-    access_token = create_access_token(data={"sub": student.email})
-
-    return student_schema.StudentAuthReturn(
-        name=student.name,
-        email=student.email,
-        jwt_token=student_schema.AuthWithToken(
-            access_token=access_token, token_type="bearer"
+    return user_schemas.UserAuthReturn(
+        name=users.name,
+        email=users.email,
+        jwt_token=user_schemas.AuthWithToken(
+            access_token=access_token,
+            token_type="bearer",
         ),
-    )
-
-
-# signup authentication
-@router.post("/signup", response_model=student_schema.Student)
-def signup(student_data: student_schema.StudentCreate, db: Session = Depends(get_db)):
-    student = get_student_by_email(student_data.email, db)
-    if student is not None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered",
-        )
-    student = Student(
-        name=student_data.name,
-        email=student_data.email,
-        hashed_password=pwd_context.hash(student_data.password),
-        image_url=student_data.image_url,
-        role_id=student_data.role_id
-    )
-    db.add(student)
-    db.commit()
-    db.refresh(student)
-    return student_schema.Student(
-        id=student.id,
-        name=student.name,
-        email=student.email,
-        image_url=student.image_url,
-        role=student.role_id,
     )

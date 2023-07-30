@@ -1,17 +1,32 @@
 from fastapi import FastAPI, Depends
-from src.routes import auth, student, mentor, peer, role, permission
-from src.database.setup import Base, engine, get_db
+from src.routes import (
+    auth,
+    peer,
+    role,
+    permission,
+    user,
+    mentor,
+    student,
+)
+from src.database.setup import (
+    Base,
+    engine,
+    get_db,
+)
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 # tempo
 from src.schemas import *
-from src.database.model import Access, Role, Permission, Student, Mentor, Peer
-from src.services.auth_services import pwd_context
+from src.database.model import *
+from src.services import auth_services
 
 app = FastAPI()
 
 # Path: src/routes/auth.py
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
+
+# Path: src/routes/user.py
+app.include_router(user.router, prefix="/user", tags=["User"])
 
 # Path: src/routes/student.py
 app.include_router(student.router, prefix="/student", tags=["Student"])
@@ -26,53 +41,72 @@ app.include_router(peer.router, prefix="/peer", tags=["Peer"])
 app.include_router(role.router, prefix="/role", tags=["Role"])
 
 # Path: src/routes/permission.py
-app.include_router(permission.router, prefix="/permission", tags=["Permission"])
+app.include_router(permission.router, prefix="/permission",
+                   tags=["Permission"])
 
 # Check Server Status
 
-@app.get("/", response_class=HTMLResponse)
+
+@app.get("/", response_class=HTMLResponse, tags=["Root"])
 async def root(db: Session = Depends(get_db)):
-    role = Role(
-        name="admin",
-    )
-    db.add(role)
-    db.commit()
-    # db.refresh(role)
-    permission = Permission(
-        route="student",
-        access=Access.READ,
-        role_id=role.id
-    )
-    db.add(permission)
-    # db.refresh(permission)
-    db.commit()
-    permission2 = Permission(
-        route="student",
-        access=Access.WRITE,
-        role_id=role.id
-    )
-    db.add(permission2)
-    db.commit()
-    # db.refresh(permission2)
-    db.commit()
-    user = Student(
-        name="admin",
-        email="sai@gmail.com",
-        hashed_password = pwd_context.hash("123456"),
-        # put random image in to image_url
-        image_url="https://i.pravatar.cc/150?img=3",
-        role_id=role.id
-    )
-    db.add(user)
-    db.commit()
-    # db.refresh(user)
-    
-    
-    
+
+    fakeData(db=db)
 
     with open("index.html", "r") as file:
         html_content = file.read()
     return HTMLResponse(content=html_content, status_code=200)
+
+
+def fakeData(db: Session):
+    permission1 = Permission(
+        route=Route.user,
+        access=Access.read,
+    )
+    permission2 = Permission(
+        route=Route.user,
+        access=Access.write,
+    )
+    permission3 = Permission(
+        route=Route.user,
+        access=Access.full,
+    )
+    db.add_all([permission1, permission2, permission3])
+    db.commit()
+    role1 = Role(
+        name="admin",
+        permissions=[permission1, permission2, permission3],
+    )
+    role2 = Role(
+        name="mentor",
+        permissions=[permission1, permission2],
+    )
+    role3 = Role(
+        name="student",
+        permissions=[permission1],
+    )
+    db.add_all([role1, role2, role3])
+    db.commit()
+    user1 = User(
+        name="Sai",
+        email="sai@potato.com",
+        hashed_password=auth_services.pwd_context.hash("123"),
+        role_id=role1.id,
+    )
+    user2 = User(
+        name="Potato",
+        email="potato@potato.com",
+        hashed_password=auth_services.pwd_context.hash("123"),
+        role_id=role2.id,
+    )
+    user3 = User(
+        name="Nemo",
+        email="nemo@potato.com",
+        hashed_password=auth_services.pwd_context.hash("123"),
+        role_id=role3.id,
+    )
+    db.add_all([user1, user2, user3])
+    db.commit()
+
 
 # Run Server
 if __name__ == "__main__":

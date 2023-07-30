@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from src.database.setup import get_db
 from sqlalchemy.orm import Session
 from src.schemas import role_schema
@@ -8,13 +9,13 @@ router = APIRouter()
 
 
 @router.get("/", response_model=list[role_schema.Role])
-def get_all_role(db: Session = Depends(get_db)):
+def get_all_role(db: Session = Depends(get_db),token: HTTPAuthorizationCredentials = Depends(HTTPBearer())):
     roles = db.query(Role).all()
     return roles
 
 
 @router.get("/{role_id}", response_model=role_schema.Role)
-def get_role(role_id: int, db: Session = Depends(get_db)):
+def get_role(role_id: int, db: Session = Depends(get_db),token: HTTPAuthorizationCredentials = Depends(HTTPBearer())):
     role = db.query(Role).filter(
         Role.id == role_id
     ).first()
@@ -22,7 +23,7 @@ def get_role(role_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/create", response_model=role_schema.Role)
-def create_role(req_role: role_schema.RoleCreate, db: Session = Depends(get_db)):
+def create_role(req_role: role_schema.RoleCreate, db: Session = Depends(get_db),token: HTTPAuthorizationCredentials = Depends(HTTPBearer())):
     role = Role(
         name=req_role.name
     )
