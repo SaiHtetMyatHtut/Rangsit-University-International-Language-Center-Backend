@@ -44,7 +44,6 @@ app.include_router(role.router, prefix="/role", tags=["Role"])
 app.include_router(permission.router, prefix="/permission",
                    tags=["Permission"])
 
-# Check Server Status
 
 
 @app.get("/", response_class=HTMLResponse, tags=["Root"])
@@ -56,33 +55,35 @@ async def root(db: Session = Depends(get_db)):
         html_content = file.read()
     return HTMLResponse(content=html_content, status_code=200)
 
+    
 
 def fakeData(db: Session):
-    permission1 = Permission(
+    user_read = Permission(
         route=Route.user,
         access=Access.read,
     )
-    permission2 = Permission(
+    user_write = Permission(
         route=Route.user,
         access=Access.write,
     )
-    permission3 = Permission(
+    user_full = Permission(
         route=Route.user,
         access=Access.full,
     )
-    db.add_all([permission1, permission2, permission3])
+    
+    db.add_all([user_read, user_write, user_full,])
     db.commit()
     role1 = Role(
         name="admin",
-        permissions=[permission1, permission2, permission3],
+        permissions=[user_read, user_write, user_full],
     )
     role2 = Role(
         name="mentor",
-        permissions=[permission1, permission2],
+        permissions=[user_read, user_write],
     )
     role3 = Role(
         name="student",
-        permissions=[permission1],
+        permissions=[user_read],
     )
     db.add_all([role1, role2, role3])
     db.commit()

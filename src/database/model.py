@@ -8,6 +8,10 @@ import enum
 
 class Route(enum.Enum):
     user = "user"
+    peer = "peer"
+    student = "student"
+    mentor = "mentor"
+    
 
 
 class Access(enum.Enum):

@@ -67,3 +67,25 @@ async def get_all_student(token: HTTPAuthorizationCredentials = Depends(auth_sch
     return user
 
 
+@router.delete("/{id}", response_model=user_schemas.User)
+@auth_check(route=Route.user, access=Access.full)
+async def delete_student(id: int, token: HTTPAuthorizationCredentials = Depends(auth_scheme), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == id).first()
+    db.delete(user)
+    db.commit()
+    return user
+
+
+@router.put("/{id}", response_model=user_schemas.User)
+@auth_check(route=Route.user, access=Access.full)
+async def update_student(id: int, user_data: user_schemas.UserCreate, token: HTTPAuthorizationCredentials = Depends(auth_scheme), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == id).first()
+    if user_data.email:
+        user.email = user_data.email
+    if user_data.name:
+        user.name = user_data.name
+    if user_data.image_url:
+        user.image_url = user_data.image_url
+    db.add(user)
+    db.commit()
+    return user

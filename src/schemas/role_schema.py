@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, List
-from src.database.model import Access
+from src.database.model import Access, Route
 
 class RoleBase(BaseModel):
     pass
@@ -10,7 +10,7 @@ class PermissionBase(BaseModel):
 
 class Permission(PermissionBase):
     id: int
-    route: str
+    route: Route
     access: Access
 
     class Config:
@@ -32,6 +32,13 @@ class PermissionCreate(PermissionBase):
         orm_mode = True
 
 class RoleCreate(RoleBase):
+    name: str
+    permissions: List[PermissionCreate]
+
+    class Config:
+        orm_mode = True
+        
+class RoleUpdate(RoleBase):
     name: str
     permissions: List[PermissionCreate]
 
